@@ -42,7 +42,7 @@ def redeNeural(nome, momentum, lr, epocas, hiddenSize, datasetNome, entradas):
     test = test.sample(frac=1)
 
     nomes = data[['HomeTeam', 'AwayTeam']]
-    preverRodada(data, entradas, [])
+#     preverRodada(data, entradas, [])
     data1 = data.iloc[:, 5:]
     data2 = data[['FTR']]
     data_transformed = data2.replace({"H":1,"D":0,"A":-1})
