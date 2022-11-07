@@ -43,10 +43,6 @@ def criarModelos():
 def previsao():
     return False
 
-@app.route('/display/<filename>')
-def display_image(filename):
-	return redirect(url_for('static', filename='temp/' + filename), code=301)
-
 def salvarEstatisticas(nome, dataset, lr, momentum, hiddenSize, epocas, real, previsao, entradas):
     for i in range(0, len(previsao)):
         if previsao[i] > 0.50:
