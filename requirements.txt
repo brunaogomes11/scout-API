@@ -9,3 +9,4 @@ torchvision==0.12.0+cpu
 urllib3==1.26.9
 Werkzeug==2.1.1
 matplotlib==3.5.1
+flask_cors==3.0.10
