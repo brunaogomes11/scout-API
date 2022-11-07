@@ -8,6 +8,10 @@ app = Flask(__name__)
 cors = CORS(app, resources={r"/foo": {"origins": "*"}})
 app.config['CORS_HEADERS'] = 'Content-Type'
 
+@app.route("/", methods=["GET"])
+def rodarServidor():
+    return 'API rodando'
+
 @app.route("/treinar", methods=["POST"])
 @cross_origin(origin='*',headers=['Content-Type','Authorization'])
 def criarModelos():
