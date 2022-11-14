@@ -1,5 +1,5 @@
 import pandas as pd
-from app.iaModel import redeNeural
+from app.iaModel import redeNeural, preverRodada
 import os
 from flask import Flask, jsonify, redirect, request, url_for
 from flask_cors import CORS, cross_origin
@@ -41,7 +41,19 @@ def criarModelos():
 
 @app.route("/previsao", methods=["POST"])
 def previsao():
-    return False
+    request.data = request.get_json()
+    if request.data:
+        if 'datasetName' in request.data:
+            datasetNome = request.data['datasetName']
+        if 'entradas' in request.data:
+            if (request.data['entradas'] != ''):
+                entradas = request.data['entradas']   
+            else:
+                return "Erro! Lista de entradas vazia!"
+        if 'rodada' in request.data:
+            rodada = request.data['rodada']
+        resultado = preverRodada(datasetNome, entradas, rodada)
+    return jsonify({"Resultado":f'{resultado}'})
 
 def salvarEstatisticas(nome, dataset, lr, momentum, hiddenSize, epocas, real, previsao, entradas):
     for i in range(0, len(previsao)):

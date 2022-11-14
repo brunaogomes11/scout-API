@@ -42,7 +42,6 @@ def redeNeural(nome, momentum, lr, epocas, hiddenSize, datasetNome, entradas):
     test = test.sample(frac=1)
 
     nomes = data[['HomeTeam', 'AwayTeam']]
-#     preverRodada(data, entradas, [])
     data1 = data.iloc[:, 5:]
     data2 = data[['FTR']]
     data_transformed = data2.replace({"H":1,"D":0,"A":-1})
@@ -65,7 +64,6 @@ def redeNeural(nome, momentum, lr, epocas, hiddenSize, datasetNome, entradas):
     training_output= output[:-10]
     test_input = input[-10:]
     test_output = output[-10:]
-
     # Convertendo para tensor
     training_input = torch.FloatTensor(training_input.values)
     training_output = torch.FloatTensor(training_output.values)
@@ -90,7 +88,7 @@ def redeNeural(nome, momentum, lr, epocas, hiddenSize, datasetNome, entradas):
         # Cálculo do erro
         loss = criterion(y_pred.squeeze(), training_output.squeeze())
         errors.append(loss.item())
-        if epoch % 1000 == 0:
+        if epoch % 10000 == 0:
             print(f'Época: {epoch} Loss: {loss.item()}')
         # Backpropagation
         loss.backward()
@@ -112,33 +110,45 @@ def tratarString(nome):
     nome = nome.lower()
     nome = nome.replace(' ', '-')
 
-def preverRodada(input, stats, rodadaInput):
-    times = pd.DataFrame({"HomeTeam":input["HomeTeam"].drop_duplicates()})
-    times["HGA"] = 0
-    media_times = pd.DataFrame({"Time":times["HomeTeam"]})
-    media_times["GolsCasa"] = 0
-    media_times["QntdJogosCasa"] = 0
-    media_times["MediaGolsCasa"] = 0
-    media_times["GolsFora"] = 0
-    media_times["QntdJogosFora"] = 0
-    media_times["MediaGolsFora"] = 0
-    for index, rodada in input.iterrows():
-        for index2, time in times.iterrows():
-            if rodada["AwayTeam"] == time["HomeTeam"]:
-                media_times.iloc[index2, 1] += rodada["FTHG"]
-                media_times.iloc[index2, 2] += 1
-                media_times.iloc[index2, 3] = media_times.iloc[index2, 1]/media_times.iloc[index2, 2]
-                media_times.iloc[index2, 4] += rodada["FTAG"]
-                media_times.iloc[index2, 5] += 1
-                media_times.iloc[index2, 6] = media_times.iloc[index2, 4]/media_times.iloc[index2, 5]
-    media_times2 = pd.DataFrame({"AGH": media_times["MediaGolsCasa"], "AGH": media_times["MediaGolsFora"]})
+def preverRodada(datasetNome, entradas, rodadaInput):
+    entradas = entradas.replace("[", "")
+    entradas = entradas.replace("]", "")
+    entradas = entradas.split(",")
+    columns_data = ['HomeTeam', 'AwayTeam', 'FTR', 'FTHG', 'FTAG', "HTR"]
+    datasetNome = datasetNome+'.csv'
+    for entrada in entradas:
+        columns_data.append(entrada)
+    data = pd.read_csv('app/data/dataset/'+datasetNome, header=0, sep=',', usecols=columns_data)
+    data = data.drop(labels=["FTHG", "FTAG", "FTR", "HTR"], axis=1)
+    data = data.replace(np.nan, 0)
+    home_columns = [col for col in data.columns if 'H' in col]
+    data_home = data.loc[:, home_columns]
+    data_home = data_home.drop(["HTAG"], axis=1)
+    df_mediasHome = data_home.groupby(['HomeTeam'], as_index=False).mean()
+    away_columns = [col for col in data.columns if 'A' in col]
+    data_away = data.loc[:, away_columns]
+    df_mediasAway = data_away.groupby(['AwayTeam'], as_index=False).mean()
+    df_rodada = pd.DataFrame(rodadaInput)
+    for linha in range(0, len(df_rodada)):
+        for coluna in entradas:
+            df_rodada[coluna] = 0
+    for linhaRodada in range(0, len(df_rodada)):
+        for linhaAway in range(0, len(df_mediasAway)):
+            for colunaAway in df_mediasAway:
+                if (df_mediasAway.at[linhaAway, "AwayTeam"] == df_rodada.at[linhaRodada, "AwayTeam"]):
+                    df_rodada.at[linhaRodada, colunaAway] = df_mediasAway.at[linhaAway, colunaAway]
+    for linhaRodada in range(0, len(df_rodada)):
+        for linhaHome in range(0, len(df_mediasHome)):
+            for colunaAway in df_mediasHome:
+                if (df_mediasHome.at[linhaHome, "HomeTeam"] == df_rodada.at[linhaRodada, "HomeTeam"]):
+                    df_rodada.at[linhaRodada, colunaAway] = df_mediasHome.at[linhaHome, colunaAway]
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    test_input = torch.FloatTensor(media_times2)
-    print(test_input)
-    input_size = test_input.size()[0]
+    df_rodada = df_rodada.drop(labels=["HomeTeam", "AwayTeam"], axis=1)
+    test_input = torch.FloatTensor(df_rodada.values)
+    input_size = test_input.size()[1]
     hidden_size = 100
     model = Net(input_size, hidden_size)
-    model.load_state_dict(torch.load('app/data/modelo8-10.pth'))
+    model.load_state_dict(torch.load('app/data/modeloTreinado.pth'))
     model.eval()
     y_pred = model(test_input)
-    print(y_pred)
+    return y_pred
