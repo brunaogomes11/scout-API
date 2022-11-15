@@ -5,15 +5,13 @@ from flask import Flask, jsonify, redirect, request, url_for
 from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
-cors = CORS(app, resources={r"/foo": {"origins": "*"}})
-app.config['CORS_HEADERS'] = 'Content-Type'
+CORS(app)
 
 @app.route("/", methods=["GET"])
 def rodarServidor():
     return 'API rodando'
 
 @app.route("/treinar", methods=["POST"])
-@cross_origin(origin='*',headers=['Content-Type','Authorization'])
 def criarModelos():
     nome, momentum, lr, epocas, hiddenSize, datasetNome, entradas = None, None, None, None, None, None, None
     request.data = request.get_json()
